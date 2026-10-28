@@ -20,6 +20,7 @@
   --accent:#2fd078; --accent-ink:#0b1a12; --warn:#f0a35e; --warn-bg:#33251a; --danger:#ff7a6b; color-scheme:dark}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.pw{-webkit-text-security:disc}
 html{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
 .wrap{max-width:720px;margin:0 auto;padding-block:28px 56px;
@@ -93,6 +94,14 @@ select option{color:var(--fg)}
 .inline input{width:auto;flex:1 1 120px}
 .empty{padding:24px 14px;text-align:center;color:var(--muted)}
 
+.row.flash{animation:flash 2.5s ease-out}
+@keyframes flash{
+  0%,40%{background:color-mix(in srgb,var(--accent) 22%,var(--surface))}
+  100%{background:var(--surface)}
+}
+@media (prefers-reduced-motion:reduce){
+  .row.flash{animation:none;background:color-mix(in srgb,var(--accent) 15%,var(--surface))}
+}
 .searchrow{flex-wrap:wrap}
 .searchrow input{flex:1 1 160px}
 .modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
@@ -102,6 +111,22 @@ select option{color:var(--fg)}
 .modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
 #mapBox{width:100%;height:min(52vh,420px);min-height:240px;border-radius:8px;overflow:hidden;background:var(--sunken);flex:none}
 #mapRes{max-height:28vh}
+
+.listbar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.viewtabs{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.vtab{border:0;background:none;padding:4px 14px;font-size:.85rem;cursor:pointer;color:var(--muted)}
+.vtab+.vtab{border-left:1px solid var(--line)}
+.vtab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.mapview{padding:10px;display:flex;flex-direction:column;gap:8px}
+#allMap{width:100%;height:min(65vh,560px);min-height:300px;border-radius:8px;overflow:hidden;background:var(--sunken)}
+.mapcard{position:relative;margin-bottom:46px;min-width:180px;max-width:240px;background:var(--surface);color:var(--fg);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;box-shadow:0 4px 14px color-mix(in srgb,#000 18%,transparent);
+  display:flex;flex-direction:column;gap:2px;font-size:.84rem;line-height:1.4;white-space:normal}
+.mapcard .name{font-size:.95rem;padding-right:18px}
+.mapcard .menu,.mapcard .dist{font-size:.8rem}
+.mapcard .mc-actions{display:flex;gap:12px;margin-top:4px}
+.mapcard .x{position:absolute;top:4px;right:6px;border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:2px}
+.baselabel{display:inline-block;background:var(--fg);color:var(--bg);font-size:12px;padding:3px 8px;border-radius:999px;white-space:nowrap}
 @media (prefers-reduced-motion:no-preference){.panel{animation:fade .15s ease-out}@keyframes fade{from{opacity:.4}to{opacity:1}}}
 </style>
 </head>
@@ -119,6 +144,7 @@ select option{color:var(--fg)}
     <input class="search" id="q" type="search" placeholder="가게·메뉴 검색" aria-label="가게·메뉴 검색">
     <select id="sort" aria-label="정렬">
       <option value="dist">거리순</option>
+      <option value="name">이름순</option>
       <option value="priceAsc">가격 낮은 순</option>
       <option value="priceDesc">가격 높은 순</option>
       <option value="reviews">한줄평 많은 순</option>
@@ -143,12 +169,13 @@ select option{color:var(--fg)}
       </div>
       <label class="f" for="a_cat">종류
         <select id="a_cat"></select>
+        <small id="catHint" hidden></small>
       </label>
       <label class="f" for="a_price">대표 가격 (원)<input id="a_price" type="number" inputmode="numeric" min="0" step="100" placeholder="12000"></label>
-      <label class="f full" for="a_menu">추천 메뉴<input id="a_menu" maxlength="100" placeholder="제육, 육회비빔밥"></label>
-      <label class="f full" for="a_desc">한줄 설명<textarea id="a_desc" maxlength="300" placeholder="양 많고 빨리 나와요. 일요일 휴무."></textarea></label>
-      <label class="f" for="a_nick">닉네임 *<input id="a_nick" maxlength="20" required></label>
-      <label class="f" for="a_pw">비밀번호 * (수정·삭제용, 4자 이상)<input id="a_pw" type="password" minlength="4" required></label>
+      <label class="f full" for="a_menu">추천 메뉴<input id="a_menu" maxlength="100" placeholder="예) 제육, 육회비빔밥"></label>
+      <label class="f full" for="a_desc">한줄 설명<textarea id="a_desc" maxlength="300" placeholder="예) 양 많고 빨리 나와요. 일요일 휴무."></textarea></label>
+      <label class="f" for="a_nick">닉네임<input id="a_nick" maxlength="20" autocomplete="off" placeholder="비워 두면 자동으로 지어져요"></label>
+      <label class="f" for="a_pw">비밀번호 * (수정·삭제용, 4자 이상)<input id="a_pw" type="text" class="pw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" minlength="4" required></label>
       <div class="actions full">
         <button class="btn primary" type="submit">등록</button>
         <button class="btn" type="button" id="cancelAdd">닫기</button>
@@ -157,8 +184,18 @@ select option{color:var(--fg)}
     </form>
   </section>
 
-  <div class="count" id="count"></div>
+  <div class="listbar">
+    <div class="count" id="count"></div>
+    <div class="viewtabs" role="group" aria-label="보기 방식">
+      <button class="vtab" type="button" data-view="list" aria-pressed="true">목록</button>
+      <button class="vtab" type="button" data-view="map" aria-pressed="false" id="mapTab" hidden>지도</button>
+    </div>
+  </div>
   <div class="card list" id="list"><div class="empty">불러오는 중…</div></div>
+  <section class="card mapview" id="mapView" hidden>
+    <div id="allMap"></div>
+    <p class="hint" id="mapNote"></p>
+  </section>
 </div>
 
 <div class="modal" id="mapModal" hidden>
@@ -189,7 +226,7 @@ const CONFIG = {
   KAKAO_JS_KEY: "695807c1ce3a1501057bbe08a465b704",
   BASE: { lat: 35.1552386, lng: 129.0649739, label: "기준 위치 전포대로 207 (전포동 688-2)" },
 };
-const CATEGORIES = ["한식", "중식·대만", "일식", "양식", "패스트푸드", "아시아", "태국", "분식", "샐러드·샌드위치", "카페·빵", "기타"];
+const CATEGORIES = ["한식", "중식·대만", "일식", "양식", "패스트푸드", "아시아", "분식", "샐러드·샌드위치", "카페·빵", "기타"];
 // =================================================
 
 const $ = id => document.getElementById(id);
@@ -222,6 +259,7 @@ const state = {
   reviews: new Map(),   // restaurant_id -> [review]
   reviewDel: null,      // review id being deleted
   picked: null,         // 카카오에서 고른 장소
+  view: store.get("view") === "map" ? "map" : "list", // 목록 / 지도 보기
 };
 
 // ---------- Supabase ----------
@@ -264,6 +302,7 @@ function visibleRows() {
     s === "priceDesc" ? cmp(a, b, "price", -1) || cmp(a, b, "d", 1) :
     s === "reviews" ? cmp(a, b, "review_count", -1) || cmp(a, b, "d", 1) :
     s === "recent" ? cmp(a, b, "created_at", -1) :
+    s === "name" ? a.name.localeCompare(b.name, "ko") :
     cmp(a, b, "d", 1) || cmp(a, b, "price", 1));
   return out;
 }
@@ -289,7 +328,7 @@ function panelHtml(r) {
           <p>${esc(v.content)}</p>
           ${state.reviewDel === v.id ? `
           <form class="inline" data-form="revdel" data-rid="${v.id}">
-            <input type="password" id="rd_pw_${v.id}" placeholder="한줄평 비밀번호" required aria-label="한줄평 비밀번호">
+            <input type="text" class="pw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" id="rd_pw_${v.id}" placeholder="한줄평 비밀번호" required aria-label="한줄평 비밀번호">
             <button class="btn danger" type="submit">삭제</button>
             <button class="btn" type="button" data-act="revdelcancel">취소</button>
             <span class="msg"></span>
@@ -299,8 +338,8 @@ function panelHtml(r) {
       <ul class="reviews">${items}</ul>
       <form class="grid" data-form="review" autocomplete="off">
         <label class="f full" for="rv_c_${r.id}">한줄평<textarea id="rv_c_${r.id}" maxlength="300" required placeholder="웨이팅 20분, 츠케멘 양 많아요"></textarea></label>
-        <label class="f" for="rv_n_${r.id}">닉네임<input id="rv_n_${r.id}" maxlength="20" required value="${esc(store.get("nick") || "")}"></label>
-        <label class="f" for="rv_p_${r.id}">비밀번호 (4자 이상)<input id="rv_p_${r.id}" type="password" minlength="4" required></label>
+        <label class="f" for="rv_n_${r.id}">닉네임<input id="rv_n_${r.id}" maxlength="20" autocomplete="off" placeholder="비워 두면 자동으로 지어져요" value="${esc(store.get("nick") || "")}"></label>
+        <label class="f" for="rv_p_${r.id}">비밀번호 (4자 이상)<input id="rv_p_${r.id}" type="text" class="pw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" minlength="4" required></label>
         <div class="actions full"><button class="btn primary" type="submit">한줄평 남기기</button><span class="msg"></span></div>
       </form>
     </div>`;
@@ -312,7 +351,7 @@ function panelHtml(r) {
         <label class="f" for="e_price_${r.id}">대표 가격 (원)<input id="e_price_${r.id}" type="number" min="0" step="100" value="${r.price ?? ""}"></label>
         <label class="f full" for="e_menu_${r.id}">추천 메뉴<input id="e_menu_${r.id}" maxlength="100" value="${esc(r.menu || "")}"></label>
         <label class="f full" for="e_desc_${r.id}">한줄 설명<textarea id="e_desc_${r.id}" maxlength="300">${esc(r.description || "")}</textarea></label>
-        <label class="f full" for="e_pw_${r.id}">등록할 때 정한 비밀번호<input id="e_pw_${r.id}" type="password" required></label>
+        <label class="f full" for="e_pw_${r.id}">등록할 때 정한 비밀번호<input id="e_pw_${r.id}" type="text" class="pw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required></label>
         <div class="actions full"><button class="btn primary" type="submit">저장</button><button class="btn" type="button" data-act="close">취소</button><span class="msg"></span></div>
       </form>
     </div>`;
@@ -321,7 +360,7 @@ function panelHtml(r) {
     return `<div class="panel">
       <form class="inline" data-form="del">
         <span class="hint" style="flex-basis:100%">가게와 한줄평 ${r.review_count}개가 함께 지워져요.</span>
-        <input type="password" id="d_pw_${r.id}" placeholder="등록할 때 정한 비밀번호" required aria-label="비밀번호">
+        <input type="text" class="pw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" id="d_pw_${r.id}" placeholder="등록할 때 정한 비밀번호" required aria-label="비밀번호">
         <button class="btn danger" type="submit">삭제</button>
         <button class="btn" type="button" data-act="close">취소</button>
         <span class="msg"></span>
@@ -332,6 +371,7 @@ function panelHtml(r) {
 }
 
 function renderList() {
+  if (state.view === "map") updateAllMap(); // 지도 보기 중이면 필터·검색 결과를 지도에도 반영
   const rows = visibleRows();
   $("count").textContent = `${rows.length}곳` + (rows.length !== state.rows.length ? ` / 전체 ${state.rows.length}곳` : "");
   if (!rows.length) {
@@ -361,6 +401,25 @@ function catOptions(sel) {
   const list = CATEGORIES.includes(sel) || !sel ? CATEGORIES : [...CATEGORIES, sel];
   const placeholder = sel ? "" : `<option value="" disabled selected>선택하세요</option>`;
   return placeholder + list.map(c => `<option${c === sel ? " selected" : ""}>${esc(c)}</option>`).join("");
+}
+// 닉네임을 비워 두면 "형용사 명사"로 지어 준다 (예: 배고픈 만두)
+const NICK_ADJ = ["배고픈", "든든한", "졸린", "바쁜", "느긋한", "수줍은", "용감한", "성실한", "신난", "조용한",
+  "다정한", "까다로운", "부지런한", "출출한", "행복한", "엉뚱한", "꼼꼼한", "씩씩한", "포근한", "날쌘"];
+const NICK_NOUN = ["만두", "국밥", "김밥", "떡볶이", "돈까스", "라멘", "우동", "짬뽕", "비빔밥", "칼국수",
+  "고양이", "다람쥐", "판다", "펭귄", "수달", "햄스터", "부엉이", "너구리", "토끼", "코알라"];
+const pickOne = a => a[Math.floor(Math.random() * a.length)];
+const randomNick = () => `${pickOne(NICK_ADJ)} ${pickOne(NICK_NOUN)}`;
+
+// 목록의 한 가게로 스크롤하고 배경을 잠깐 초록색으로 깜빡인다
+function flashRow(id) {
+  const row = document.querySelector(`.row[data-id="${id}"]`);
+  if (!row) return;
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  row.scrollIntoView({ block: "center", behavior: calm ? "auto" : "smooth" });
+  row.classList.remove("flash");
+  void row.offsetWidth; // 같은 가게를 연달아 강조할 때 애니메이션을 다시 시작
+  row.classList.add("flash");
+  setTimeout(() => row.classList.remove("flash"), 2600);
 }
 function setMsg(el, text, ok) { if (!el) return; el.textContent = text; el.className = "msg " + (ok ? "ok" : "err"); }
 const toNum = v => v === "" || v == null ? null : Math.max(0, Math.round(Number(v)));
@@ -403,9 +462,9 @@ $("list").addEventListener("submit", async e => {
   btn.disabled = true;
   try {
     if (kind === "review") {
-      const nick = $("rv_n_" + id).value;
-      await rpc("add_review", { p_restaurant_id: id, p_nickname: nick, p_content: $("rv_c_" + id).value, p_password: $("rv_p_" + id).value });
-      store.set("nick", nick.trim());
+      const typed = $("rv_n_" + id).value.trim();
+      await rpc("add_review", { p_restaurant_id: id, p_nickname: typed || randomNick(), p_content: $("rv_c_" + id).value, p_password: $("rv_p_" + id).value });
+      if (typed) store.set("nick", typed);
       await loadReviews(id);
     } else if (kind === "revdel") {
       await rpc("delete_review", { p_id: Number(f.dataset.rid), p_password: $("rd_pw_" + f.dataset.rid).value });
@@ -435,6 +494,7 @@ $("a_nick").value = store.get("nick") || "";
 function toggleAdd(open) {
   $("addBox").hidden = !open;
   $("toggleAdd").setAttribute("aria-expanded", String(open));
+  $("addMsg").textContent = ""; // 열고 닫을 때 이전 안내 문구 지우기
   if (open) $("a_name").focus();
 }
 $("toggleAdd").addEventListener("click", () => toggleAdd($("addBox").hidden));
@@ -454,7 +514,11 @@ function loadKakao() {
   s.src = "https://dapi.kakao.com/v2/maps/sdk.js?autoload=false&libraries=services&appkey=" + encodeURIComponent(CONFIG.KAKAO_JS_KEY);
   s.onload = () => {
     if (!window.kakao || !kakao.maps) return noKakao();
-    kakao.maps.load(() => { kakaoPlaces = new kakao.maps.services.Places(); });
+    kakao.maps.load(() => {
+      kakaoPlaces = new kakao.maps.services.Places();
+      $("mapTab").hidden = false;
+      if (state.view === "map") setView("map");
+    });
   };
   s.onerror = noKakao;
   document.head.appendChild(s);
@@ -485,12 +549,45 @@ $("a_name").addEventListener("keydown", e => {
   if (e.key === "Enter" && kakaoPlaces) { e.preventDefault(); kakaoSearch(); }
 });
 // 검색 결과나 지도에서 고른 장소를 폼에 채운다
+// 카카오 분류(예: "음식점 > 일식 > 돈까스,우동")를 우리 종류 목록에 맞춘다.
+// 위에서부터 차례로 보고 처음 맞는 규칙을 쓴다. 맞는 게 없으면 null.
+const KAKAO_CATEGORY_RULES = [
+  ["샐러드·샌드위치", ["샐러드", "샌드위치"]],
+  ["패스트푸드",     ["패스트푸드", "햄버거"]],
+  ["아시아",         ["아시아", "태국", "베트남", "인도", "동남아"]],
+  ["중식·대만",      ["중식", "중국", "대만"]],
+  ["일식",           ["일식", "돈까스", "초밥", "라멘", "우동"]],
+  ["카페·빵",        ["카페", "제과", "베이커리", "디저트", "간식"]],
+  ["분식",           ["분식", "김밥", "떡볶이"]],
+  ["양식",           ["양식", "피자", "이탈리안", "스테이크", "패밀리레스토랑"]],
+  ["한식",           ["한식", "국밥", "해장국", "칼국수", "냉면", "백반", "닭갈비", "족발"]],
+];
+function mapKakaoCategory(categoryName) {
+  const path = (categoryName || "").split(" > ").slice(1).join(" > ");
+  const rule = KAKAO_CATEGORY_RULES.find(([, words]) => words.some(w => path.includes(w)));
+  return { path, category: rule && CATEGORIES.includes(rule[0]) ? rule[0] : null };
+}
+function setCategoryFromKakao(categoryName) {
+  const { path, category } = mapKakaoCategory(categoryName);
+  const hint = $("catHint");
+  if (!path) { hint.hidden = true; return; }
+  hint.hidden = false;
+  if (category) {
+    $("a_cat").innerHTML = catOptions(category);
+    hint.textContent = `카카오 분류 '${path}'에 맞춰 골랐어요`;
+  } else {
+    $("a_cat").innerHTML = catOptions("");
+    hint.textContent = `카카오 분류 '${path}'와 맞는 종류가 없어요. 직접 고르거나 비워 두면 기타로 저장돼요`;
+  }
+}
+
 function pickPlace(p) {
   state.picked = { name: p.place_name, address: p.road_address_name || p.address_name, lat: +p.y, lng: +p.x, url: p.place_url };
   $("kres").hidden = true;
   $("a_name").value = p.place_name;
   $("picked").hidden = false;
   $("picked").textContent = `선택한 위치: ${state.picked.address} · 기준 위치에서 ${fmtD(meters(state.picked.lat, state.picked.lng))}`;
+  setCategoryFromKakao(p.category_name);
   $("a_menu").focus();
 }
 $("kres").addEventListener("click", e => {
@@ -616,6 +713,90 @@ $("mapRes").addEventListener("click", e => {
 });
 $("mapModal").addEventListener("click", e => { if (e.target.closest("[data-close]")) closeMap(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("mapModal").hidden) closeMap(); });
+// ---------- 지도로 보기 (등록된 가게 전체) ----------
+const allMap = { map: null, markers: [], card: null };
+
+function setView(v) {
+  state.view = v;
+  store.set("view", v);
+  document.querySelectorAll(".vtab").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+  $("list").hidden = v === "map";
+  $("mapView").hidden = v !== "map";
+  if (v === "map") {
+    ensureAllMap();
+    // 숨겨져 있던 영역에 지도를 그렸으니 크기를 다시 잡고 핀을 찍는다
+    setTimeout(() => { allMap.map.relayout(); updateAllMap(); }, 0);
+  }
+}
+function ensureAllMap() {
+  if (allMap.map) return;
+  const B = new kakao.maps.LatLng(CONFIG.BASE.lat, CONFIG.BASE.lng);
+  allMap.map = new kakao.maps.Map($("allMap"), { center: B, level: 4 });
+  allMap.map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+  const label = document.createElement("div");
+  label.className = "baselabel";
+  label.textContent = "기준 위치";
+  new kakao.maps.CustomOverlay({ map: allMap.map, position: B, content: label, yAnchor: 0.5, zIndex: 2 });
+  kakao.maps.event.addListener(allMap.map, "click", closeCard);
+}
+function closeCard() {
+  if (!allMap.card) return;
+  allMap.card.setMap(null);
+  allMap.card = null;
+}
+
+// 지금 목록에 보이는 가게(종류 필터·검색 적용)를 핀으로 찍고, 전부 보이게 범위를 맞춘다
+function updateAllMap() {
+  if (!allMap.map) return;
+  closeCard();
+  allMap.markers.forEach(m => m.setMap(null));
+  allMap.markers = [];
+
+  const rows = visibleRows();
+  const withLoc = rows.filter(r => r.lat != null && r.lng != null);
+  const bounds = new kakao.maps.LatLngBounds();
+  bounds.extend(new kakao.maps.LatLng(CONFIG.BASE.lat, CONFIG.BASE.lng));
+  withLoc.forEach(r => {
+    const pos = new kakao.maps.LatLng(r.lat, r.lng);
+    const m = new kakao.maps.Marker({ map: allMap.map, position: pos, title: r.name });
+    kakao.maps.event.addListener(m, "click", () => openCard(r, pos));
+    allMap.markers.push(m);
+    bounds.extend(pos);
+  });
+  if (withLoc.length) allMap.map.setBounds(bounds, 40, 40, 40, 40);
+
+  const missing = rows.length - withLoc.length;
+  $("mapNote").textContent = `지도에 ${withLoc.length}곳` +
+    (missing ? ` · 위치 정보가 없는 ${missing}곳은 목록에서만 보여요` : "") +
+    ". 핀을 누르면 가게 정보가 나와요.";
+}
+
+// 핀을 누르면 뜨는 가게 정보 카드
+function openCard(r, pos) {
+  closeCard();
+  const el = document.createElement("div");
+  el.className = "mapcard";
+  el.innerHTML = `
+    <button class="x" type="button" aria-label="닫기">×</button>
+    <a class="name" href="${naver(naverQ(r.name))}" target="_blank" rel="noopener">${esc(r.name)}</a>
+    <span class="menu">${esc(r.category)}${r.menu ? " · " + esc(r.menu) : ""}</span>
+    <span class="dist">${r.price != null ? won(r.price) + " · " : ""}${fmtD(r.d)}</span>
+    <span class="mc-actions"><button class="btn link" type="button" data-go>목록에서 보기 · 한줄평 ${r.review_count}</button></span>`;
+  el.querySelector(".x").addEventListener("click", closeCard);
+  el.querySelector("[data-go]").addEventListener("click", () => {
+    closeCard();
+    setView("list");
+    flashRow(r.id);
+  });
+  allMap.card = new kakao.maps.CustomOverlay({ map: allMap.map, position: pos, content: el, yAnchor: 1, zIndex: 5, clickable: true });
+  allMap.map.panTo(pos);
+}
+
+document.querySelector(".viewtabs").addEventListener("click", e => {
+  const b = e.target.closest(".vtab");
+  if (b && b.dataset.view !== state.view) setView(b.dataset.view);
+});
+
 // 고른 뒤에 이름을 고치면 위치 선택을 푼다 (다른 가게 좌표가 붙지 않게)
 $("a_name").addEventListener("input", () => {
   if (state.picked && $("a_name").value !== state.picked.name) clearPicked();
@@ -627,21 +808,24 @@ $("addForm").addEventListener("submit", async e => {
   const p = state.picked;
   btn.disabled = true;
   try {
-    const nick = $("a_nick").value;
+    const typed = $("a_nick").value.trim();
+    const nick = typed || randomNick();
     const newId = await rpc("add_restaurant", {
       p_name: $("a_name").value, p_category: $("a_cat").value, p_menu: $("a_menu").value,
       p_price: toNum($("a_price").value), p_description: $("a_desc").value,
       p_address: p?.address ?? null, p_lat: p?.lat ?? null, p_lng: p?.lng ?? null, p_place_url: p?.url ?? null,
       p_nickname: nick, p_password: $("a_pw").value,
     });
-    store.set("nick", nick.trim());
+    if (typed) store.set("nick", typed);
     const name = $("a_name").value.trim();
-    e.target.reset(); $("a_cat").innerHTML = catOptions(""); $("a_nick").value = nick.trim();
+    e.target.reset(); $("a_cat").innerHTML = catOptions(""); $("catHint").hidden = true; $("a_nick").value = typed;
     $("kres").hidden = true; clearPicked();
-    setMsg(msg, `'${name}'을(를) 등록했어요.`, true);
+    setMsg(msg, `'${name}'을(를) '${nick}' 이름으로 등록했어요.`, true);
+    // 전체 목록을 보여 주고, 방금 등록한 가게로 스크롤해서 잠깐 강조한다
     state.q = ""; $("q").value = ""; state.cat = "전체";
     await refresh();
-    document.querySelector(`.row[data-id="${newId}"]`)?.scrollIntoView({ block: "center" });
+    if (state.view !== "list") setView("list");
+    flashRow(newId);
   } catch (err) {
     setMsg(msg, errText(err));
   } finally {
