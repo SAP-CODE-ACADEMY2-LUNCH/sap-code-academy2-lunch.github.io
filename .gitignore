@@ -1,0 +1,17 @@
+# DB 스키마·초기 데이터·변경 SQL
+# 관리자 비밀번호가 들어갈 수 있고, GitHub Pages로 그대로 공개되므로 올리지 않는다
+*.sql
+
+# 세팅 메모 (공개할 필요 없음)
+README.md
+
+# 환경 변수·비밀 값
+.env
+.env.*
+
+# 편집기·OS가 만드는 파일
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
