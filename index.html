@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘 점심은? · SAP CODE 점심 지도</title>
+<title>오늘 점심? · SAP CODE 점심 지도</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;600;800&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
 <style>
-/* 한 줄 목록형 게시판: 상단 기준 위치 + 도구줄(필터·검색·정렬·추가), 아래 가게 행. 행마다 한줄평/수정/삭제 패널이 펼쳐짐 */
+/* 한 줄 목록형 게시판: 상단 기준 위치 + 도구줄(필터·검색·정렬·추가), 아래 가게 행. 행마다 후기/수정/삭제 패널이 펼쳐짐 */
 :root{
   --bg:#f6f8f5; --surface:#ffffff; --sunken:#eef2ee; --fg:#1c231f; --muted:#5f6b64; --line:#dde4df;
   --accent:#03a94f; --accent-ink:#ffffff; --warn:#b4560f; --warn-bg:#fcefe3; --danger:#c43b2f;
@@ -90,8 +90,8 @@ select option{color:var(--fg)}
 .menu{color:var(--muted);font-size:.88rem;min-width:0}
 .dist{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.82rem;white-space:nowrap}
 .desc{font-size:.9rem;margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
-.meta{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin-top:4px;font-size:.82rem;color:var(--muted)}
-.meta .who{margin-right:auto}
+.meta{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;margin-top:4px;font-size:.82rem;color:var(--muted)}
+.meta .who{margin-right:auto;flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .panel{margin-top:8px;background:var(--sunken);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .reviews{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
 .review{display:flex;flex-direction:column;gap:2px}
@@ -100,6 +100,23 @@ select option{color:var(--fg)}
 .inline{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .inline input{width:auto;flex:1 1 120px}
 .empty{padding:24px 14px;text-align:center;color:var(--muted)}
+
+/* 좋아요 */
+.like{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:0 9px;font-size:.78rem;line-height:1.6;color:var(--muted);cursor:pointer;font-variant-numeric:tabular-nums}
+.like[aria-pressed="true"]{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line));background:color-mix(in srgb,var(--danger) 8%,var(--surface))}
+.like:disabled{opacity:.6;cursor:default}
+.top{display:flex;flex-direction:column;gap:8px}
+.topgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.topcard{text-align:left;font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;display:flex;flex-direction:column;gap:6px;cursor:pointer;min-width:0}
+.topcard:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.topcard .tc-head{display:flex;align-items:center;gap:8px;min-width:0}
+.topcard .tc-rank{flex:none;width:22px;height:22px;border-radius:999px;display:grid;place-items:center;
+  background:var(--accent);color:var(--accent-ink);font-size:.78rem;font-weight:800;font-variant-numeric:tabular-nums}
+.topcard .tc-name{font-family:var(--display);font-size:1rem;font-weight:800;min-width:0;overflow-wrap:anywhere;margin-right:auto}
+.topcard .tc-heart{color:var(--danger);white-space:nowrap;font-size:.85rem;font-variant-numeric:tabular-nums}
+.topcard .tc-sub,.topcard .tc-by{font-size:.8rem;color:var(--muted)}
+.topcard q{font-size:.9rem;line-height:1.4;overflow-wrap:anywhere;quotes:"“" "”"}
 
 .row.flash{animation:flash 2.5s ease-out}
 @keyframes flash{
@@ -145,10 +162,15 @@ select option{color:var(--fg)}
       <p class="subtitle">SAP CODE ACADEMY 전포동 점심 지도</p>
     </div>
     <div class="base"><span id="baseLabel"></span><a id="baseLink" target="_blank" rel="noopener">네이버 지도에서 보기</a></div>
-    <p class="hint">가게 이름을 누르면 네이버 지도 검색이 열려요. 거리는 기준 위치에서 잰 직선거리예요. 누구나 가게를 추가하고 한줄평을 남길 수 있어요. 글을 쓸 때 정한 비밀번호로 수정·삭제할 수 있어요.</p>
+    <p class="hint">가게 이름을 누르면 네이버 지도 검색이 열려요. 거리는 기준 위치에서 잰 직선거리예요. 누구나 가게를 추가하고 후기을 남길 수 있어요. 글을 쓸 때 정한 비밀번호로 수정·삭제할 수 있어요.</p>
   </header>
 
   <div class="banner" id="setupBanner" hidden></div>
+
+  <section class="top" id="topBox" hidden aria-labelledby="topTitle">
+    <h2 id="topTitle">인기 가게 TOP 3</h2>
+    <div class="topgrid" id="topList"></div>
+  </section>
 
   <div class="toolbar">
     <input class="search" id="q" type="search" placeholder="가게·메뉴 검색" aria-label="가게·메뉴 검색">
@@ -157,7 +179,8 @@ select option{color:var(--fg)}
       <option value="name">이름순</option>
       <option value="priceAsc">가격 낮은 순</option>
       <option value="priceDesc">가격 높은 순</option>
-      <option value="reviews">한줄평 많은 순</option>
+      <option value="likes">좋아요 많은 순</option>
+      <option value="reviews">후기 많은 순</option>
       <option value="recent">최근 추가순</option>
     </select>
     <button class="btn primary" id="toggleAdd" aria-expanded="false">+ 가게 추가</button>
@@ -286,10 +309,31 @@ async function loadRows() {
   if (error) throw error;
   state.rows = data.map(r => ({ ...r, d: meters(r.lat, r.lng) }));
 }
+// 후기은 좋아요 많은 순, 같으면 최신 순
 async function loadReviews(id) {
-  const { data, error } = await sb.from("review_list").select("*").eq("restaurant_id", id).order("created_at", { ascending: false });
+  const { data, error } = await sb.from("review_list").select("*").eq("restaurant_id", id)
+    .order("like_count", { ascending: false })
+    .order("created_at", { ascending: false });
   if (error) throw error;
   state.reviews.set(id, data);
+}
+// 인기 가게 TOP 3: 좋아요 1개 이상인 가게 중 좋아요 → 후기 수 → 거리 순
+function topStores() {
+  return state.rows
+    .filter(r => (r.like_count || 0) > 0)
+    .sort((a, b) => cmp(a, b, "like_count", -1) || cmp(a, b, "review_count", -1) || cmp(a, b, "d", 1))
+    .slice(0, 3);
+}
+// 인기 가게마다 카드에 보여 줄 대표 후기 (그 가게에서 좋아요가 가장 많은 것)
+async function loadTopQuotes() {
+  const ids = topStores().map(r => r.id);
+  state.topQuotes = new Map();
+  if (!ids.length) return;
+  const { data, error } = await sb.from("review_list").select("*").in("restaurant_id", ids)
+    .order("like_count", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) return;
+  data.forEach(v => { if (!state.topQuotes.has(v.restaurant_id)) state.topQuotes.set(v.restaurant_id, v); });
 }
 async function rpc(fn, args) {
   const { data, error } = await sb.rpc(fn, args);
@@ -318,6 +362,7 @@ function visibleRows() {
   out.sort((a, b) =>
     s === "priceAsc" ? cmp(a, b, "price", 1) || cmp(a, b, "d", 1) :
     s === "priceDesc" ? cmp(a, b, "price", -1) || cmp(a, b, "d", 1) :
+    s === "likes" ? cmp(a, b, "like_count", -1) || cmp(a, b, "review_count", -1) || cmp(a, b, "d", 1) :
     s === "reviews" ? cmp(a, b, "review_count", -1) || cmp(a, b, "d", 1) :
     s === "recent" ? cmp(a, b, "created_at", -1) :
     s === "name" ? a.name.localeCompare(b.name, "ko") :
@@ -379,15 +424,17 @@ function panelHtml(r) {
   if (o.mode === "reviews") {
     const list = state.reviews.get(r.id);
     const items = list == null ? `<li class="hint">불러오는 중…</li>` :
-      list.length === 0 ? `<li class="hint">아직 한줄평이 없어요. 첫 한줄평을 남겨 주세요.</li>` :
+      list.length === 0 ? `<li class="hint">아직 후기이 없어요. 첫 후기을 남겨 주세요.</li>` :
       list.map(v => `
         <li class="review">
           <span class="rh"><b>${esc(v.nickname)}</b><span>${fmtDate(v.created_at)}</span>
+            <button class="like" data-act="like" data-rid="${v.id}" type="button" aria-pressed="${likedSet.has(v.id)}"
+                    aria-label="좋아요 ${v.like_count ?? 0}개${likedSet.has(v.id) ? ", 누름" : ""}">♥ ${v.like_count ?? 0}</button>
             <button class="btn link" data-act="revdel" data-rid="${v.id}" type="button">삭제</button></span>
           <p>${esc(v.content)}</p>
           ${state.reviewDel === v.id ? `
           <form class="inline" data-form="revdel" data-rid="${v.id}">
-            <input type="text" class="pw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" id="rd_pw_${v.id}" placeholder="한줄평 비밀번호" required aria-label="한줄평 비밀번호">
+            <input type="text" class="pw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" id="rd_pw_${v.id}" placeholder="후기 비밀번호" required aria-label="후기 비밀번호">
             <button class="btn danger" type="submit">삭제</button>
             <button class="btn" type="button" data-act="revdelcancel">취소</button>
             <span class="msg"></span>
@@ -396,10 +443,10 @@ function panelHtml(r) {
     return `<div class="panel">
       <ul class="reviews">${items}</ul>
       <form class="grid" data-form="review" autocomplete="off">
-        <label class="f full" for="rv_c_${r.id}">한줄평<textarea id="rv_c_${r.id}" maxlength="300" required placeholder="웨이팅 20분, 츠케멘 양 많아요"></textarea></label>
+        <label class="f full" for="rv_c_${r.id}">후기<textarea id="rv_c_${r.id}" maxlength="300" required placeholder="예) 웨이팅 20분, 츠케멘 양 많아요"></textarea></label>
         <label class="f" for="rv_n_${r.id}">닉네임<input id="rv_n_${r.id}" maxlength="20" autocomplete="off" placeholder="비워 두면 자동으로 지어져요" value="${esc(store.get("nick") || "")}"></label>
         <label class="f" for="rv_p_${r.id}">비밀번호 (4자 이상)<input id="rv_p_${r.id}" type="text" class="pw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" minlength="4" required></label>
-        <div class="actions full"><button class="btn primary" type="submit">한줄평 남기기</button><span class="msg"></span></div>
+        <div class="actions full"><button class="btn primary" type="submit">후기 남기기</button><span class="msg"></span></div>
       </form>
     </div>`;
   }
@@ -418,7 +465,7 @@ function panelHtml(r) {
   if (o.mode === "del") {
     return `<div class="panel">
       <form class="inline" data-form="del">
-        <span class="hint" style="flex-basis:100%">가게와 한줄평 ${r.review_count}개가 함께 지워져요.</span>
+        <span class="hint" style="flex-basis:100%">가게와 후기 ${r.review_count}개가 함께 지워져요.</span>
         <input type="text" class="pw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" id="d_pw_${r.id}" placeholder="등록할 때 정한 비밀번호" required aria-label="비밀번호">
         <button class="btn danger" type="submit">삭제</button>
         <button class="btn" type="button" data-act="close">취소</button>
@@ -448,7 +495,9 @@ function renderList() {
       ${r.description ? `<p class="desc">${esc(r.description)}</p>` : ""}
       <div class="meta">
         <span class="who">${esc(r.nickname)} · ${fmtDate(r.created_at)}</span>
-        <button class="btn link" data-act="reviews" type="button" aria-expanded="${state.open?.id === r.id && state.open.mode === "reviews"}">한줄평 ${r.review_count}</button>
+        <button class="like" data-act="slike" type="button" aria-pressed="${likedStores.has(r.id)}"
+                aria-label="가게 좋아요 ${r.like_count || 0}개${likedStores.has(r.id) ? ", 누름" : ""}">♥ ${r.like_count || 0}</button>
+        <button class="btn link" data-act="reviews" type="button" aria-expanded="${state.open?.id === r.id && state.open.mode === "reviews"}">후기 ${r.review_count}</button>
         <button class="btn link" data-act="edit" type="button">수정</button>
         <button class="btn link" data-act="del" type="button">삭제</button>
       </div>
@@ -456,7 +505,7 @@ function renderList() {
     </article>`).join("");
 }
 
-function render() { renderChips(); renderList(); }
+function render() { renderChips(); renderList(); renderTop(); }
 // sel이 비어 있으면 맨 앞에 "선택하세요" 항목을 넣는다 (가게 추가 폼용)
 // 이 상태로 등록하면 값이 ""로 넘어가고, DB 함수(add_restaurant)가 '기타'로 저장한다
 function catOptions(sel) {
@@ -488,8 +537,65 @@ const toNum = v => v === "" || v == null ? null : Math.max(0, Math.round(Number(
 
 async function refresh() {
   await loadRows();
+  await loadTopQuotes();
   render();
 }
+
+// ---------- 좋아요 ----------
+// 로그인이 없으니 브라우저마다 의미 없는 무작위 값을 하나 만들어 중복 방지에만 쓴다
+const voterId = (() => {
+  let v = store.get("voter");
+  if (!v || v.length < 8) {
+    v = window.crypto?.randomUUID?.() ||
+      Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    store.set("voter", v);
+  }
+  return v;
+})();
+// 이 브라우저에서 좋아요를 누른 후기 (버튼 색 표시용, 진짜 기록은 DB에 있음)
+const likedSet = (() => {
+  try { return new Set(JSON.parse(store.get("liked") || "[]")); } catch (e) { return new Set(); }
+})();
+const saveLiked = () => store.set("liked", JSON.stringify([...likedSet]));
+// 이 브라우저에서 좋아요를 누른 가게
+const likedStores = (() => {
+  try { return new Set(JSON.parse(store.get("likedStores") || "[]")); } catch (e) { return new Set(); }
+})();
+const saveLikedStores = () => store.set("likedStores", JSON.stringify([...likedStores]));
+
+// 상단 인기 가게 TOP 3 카드
+function renderTop() {
+  const items = topStores();
+  $("topBox").hidden = !items.length;
+  $("topList").innerHTML = items.map((r, i) => {
+    const q = state.topQuotes?.get(r.id);
+    return `
+    <button class="topcard" type="button" data-rid="${r.id}">
+      <span class="tc-head">
+        <span class="tc-rank">${i + 1}</span>
+        <b class="tc-name">${esc(r.name)}</b>
+        <span class="tc-heart">♥ ${r.like_count}</span>
+      </span>
+      <span class="tc-sub">${esc(r.category)}${r.menu ? " · " + esc(r.menu) : ""} · ${fmtD(r.d)}</span>
+      ${q ? `<q>${esc(q.content)}</q><span class="tc-by">${esc(q.nickname)} · 후기 ${r.review_count}개</span>` : ""}
+    </button>`;
+  }).join("");
+}
+
+// 인기 가게를 누르면: 필터를 풀고 목록에서 그 가게의 후기을 펼쳐 보여 준다
+async function goToReviews(id) {
+  state.q = ""; $("q").value = ""; state.cat = "전체"; state.src = "all";
+  if (state.view !== "list") setView("list");
+  state.open = { id, mode: "reviews" };
+  state.reviewDel = null;
+  render();
+  flashRow(id);
+  try { await loadReviews(id); } catch (e) { state.reviews.set(id, []); }
+  renderList();
+}
+$("topList").addEventListener("click", e => {
+  const b = e.target.closest(".topcard"); if (b) goToReviews(Number(b.dataset.rid));
+});
 
 // ---------- 목록 이벤트 ----------
 $("chips").addEventListener("click", e => {
@@ -514,6 +620,43 @@ $("list").addEventListener("click", async e => {
   if (act === "close") { state.open = null; renderList(); return; }
   if (act === "revdel") { state.reviewDel = Number(b.dataset.rid); renderList(); $("rd_pw_" + b.dataset.rid)?.focus(); return; }
   if (act === "revdelcancel") { state.reviewDel = null; renderList(); return; }
+  if (act === "like") {
+    const rid = Number(b.dataset.rid);
+    b.disabled = true;
+    try {
+      const res = await rpc("toggle_like", { p_review_id: rid, p_voter: voterId });
+      const out = Array.isArray(res) ? res[0] : res;
+      if (out.liked) likedSet.add(rid); else likedSet.delete(rid);
+      saveLiked();
+      const v = state.reviews.get(id)?.find(x => x.id === rid);
+      if (v) v.like_count = out.like_count;
+      await loadTopQuotes(); // 대표 후기이 바뀔 수 있어서
+      renderTop();
+      renderList();
+    } catch (err) {
+      b.disabled = false;
+      b.title = errText(err);
+    }
+    return;
+  }
+  if (act === "slike") {
+    b.disabled = true;
+    try {
+      const res = await rpc("toggle_restaurant_like", { p_restaurant_id: id, p_voter: voterId });
+      const out = Array.isArray(res) ? res[0] : res;
+      if (out.liked) likedStores.add(id); else likedStores.delete(id);
+      saveLikedStores();
+      const r = state.rows.find(x => x.id === id);
+      if (r) r.like_count = out.like_count;
+      await loadTopQuotes(); // TOP 3가 바뀔 수 있어서
+      renderTop();
+      renderList();
+    } catch (err) {
+      b.disabled = false;
+      b.title = errText(err);
+    }
+    return;
+  }
   const same = state.open && state.open.id === id && state.open.mode === act;
   state.open = same ? null : { id, mode: act };
   state.reviewDel = null;
@@ -852,7 +995,7 @@ function openCard(r, pos) {
     ${r.collection ? `<span>${colBadge(r)}</span>` : ""}
     <span class="menu">${esc(r.category)}${r.menu ? " · " + esc(r.menu) : ""}</span>
     <span class="dist">${r.price != null ? won(r.price) + " · " : ""}${fmtD(r.d)}</span>
-    <span class="mc-actions"><button class="btn link" type="button" data-go>목록에서 보기 · 한줄평 ${r.review_count}</button></span>`;
+    <span class="mc-actions"><button class="btn link" type="button" data-go>목록에서 보기 · 후기 ${r.review_count}</button></span>`;
   el.querySelector(".x").addEventListener("click", closeCard);
   el.querySelector("[data-go]").addEventListener("click", () => {
     closeCard();
