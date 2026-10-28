@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>전포 점심 지도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;600;800&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* 한 줄 목록형 게시판: 상단 기준 위치 + 도구줄(필터·검색·정렬·추가), 아래 가게 행. 행마다 한줄평/수정/삭제 패널이 펼쳐짐 */
+:root{
+  --bg:#f6f8f5; --surface:#ffffff; --sunken:#eef2ee; --fg:#1c231f; --muted:#5f6b64; --line:#dde4df;
+  --accent:#03a94f; --accent-ink:#ffffff; --warn:#b4560f; --warn-bg:#fcefe3; --danger:#c43b2f;
+  --display:"Gothic A1","Apple SD Gothic Neo",system-ui,sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#121614; --surface:#1a201d; --sunken:#151a17; --fg:#e7ede9; --muted:#9aa69f; --line:#2b332f;
+  --accent:#2fd078; --accent-ink:#0b1a12; --warn:#f0a35e; --warn-bg:#33251a; --danger:#ff7a6b; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding-block:28px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--display);font-weight:800;font-size:1.7rem;margin:0;letter-spacing:-.01em}
+h2{font-family:var(--display);font-weight:800;font-size:1.05rem;margin:0}
+a{color:var(--accent)}
+.base{display:flex;flex-wrap:wrap;gap:6px 12px;color:var(--muted)}
+.base a{font-weight:600;text-decoration:none}
+.hint{color:var(--muted);font-size:.85rem;margin:0}
+.banner{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:.9rem}
+
+button,input,select,textarea{font:inherit;color:var(--fg)}
+input,select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:64px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
+.btn.link{border:0;background:none;padding:2px 0;color:var(--muted);font-size:.84rem}
+.btn.link:hover{color:var(--fg)}
+.btn:disabled{opacity:.5;cursor:default}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar .search{flex:1 1 180px}
+.toolbar select{width:auto}
+select:has(option[value=""]:checked){color:var(--muted)}
+select option{color:var(--fg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:.85rem;border:1px solid var(--line);background:var(--surface);padding:4px 12px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.count{font-size:.85rem;color:var(--muted)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.addbox{padding:16px;display:flex;flex-direction:column;gap:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid .full{grid-column:1/-1}
+@media (max-width:480px){.grid{grid-template-columns:1fr}}
+.f{display:flex;flex-direction:column;gap:4px;font-size:.84rem;color:var(--muted);min-width:0}
+.searchrow{display:flex;gap:8px}
+.results{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden;max-height:260px;overflow-y:auto}
+.result{display:grid;grid-template-columns:1fr auto;gap:0 10px;text-align:left;padding:8px 10px;border:0;border-top:1px solid var(--line);background:var(--surface);cursor:pointer}
+.result:first-child{border-top:0}
+.result:hover,.result[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.result small{color:var(--muted);grid-column:1/-1}
+.picked{font-size:.88rem;color:var(--fg);background:var(--sunken);border-radius:8px;padding:8px 10px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.msg{font-size:.85rem;min-height:1.2em}
+.msg.err{color:var(--danger)}
+.msg.ok{color:var(--accent)}
+
+.list{overflow:hidden}
+.row{padding:12px 14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.row:first-child{border-top:0}
+.line1,.line2{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.name{font-weight:600;font-size:1rem;color:inherit;text-decoration:none;min-width:0}
+.name:hover{color:var(--accent)}
+.price{font-variant-numeric:tabular-nums;font-size:.88rem;white-space:nowrap}
+.menu{color:var(--muted);font-size:.88rem;min-width:0}
+.dist{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.82rem;white-space:nowrap}
+.desc{font-size:.9rem;margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin-top:4px;font-size:.82rem;color:var(--muted)}
+.meta .who{margin-right:auto}
+.panel{margin-top:8px;background:var(--sunken);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.reviews{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.review{display:flex;flex-direction:column;gap:2px}
+.review .rh{display:flex;gap:8px;align-items:baseline;font-size:.8rem;color:var(--muted)}
+.review p{margin:0;font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+.inline{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.inline input{width:auto;flex:1 1 120px}
+.empty{padding:24px 14px;text-align:center;color:var(--muted)}
+
+.searchrow{flex-wrap:wrap}
+.searchrow input{flex:1 1 160px}
+.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal-back{position:absolute;inset:0;background:color-mix(in srgb,#000 45%,transparent)}
+.modal-panel{position:relative;width:min(640px,100%);max-height:100%;display:flex;flex-direction:column;gap:10px;padding:14px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#mapBox{width:100%;height:min(52vh,420px);min-height:240px;border-radius:8px;overflow:hidden;background:var(--sunken);flex:none}
+#mapRes{max-height:28vh}
+@media (prefers-reduced-motion:no-preference){.panel{animation:fade .15s ease-out}@keyframes fade{from{opacity:.4}to{opacity:1}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>전포 점심 지도</h1>
+    <div class="base"><span id="baseLabel"></span><a id="baseLink" target="_blank" rel="noopener">네이버 지도에서 보기</a></div>
+    <p class="hint">가게 이름을 누르면 네이버 지도 검색이 열려요. 거리는 기준 위치에서 잰 직선거리예요. 누구나 가게를 추가하고 한줄평을 남길 수 있어요. 글을 쓸 때 정한 비밀번호로 수정·삭제할 수 있어요.</p>
+  </header>
+
+  <div class="banner" id="setupBanner" hidden></div>
+
+  <div class="toolbar">
+    <input class="search" id="q" type="search" placeholder="가게·메뉴 검색" aria-label="가게·메뉴 검색">
+    <select id="sort" aria-label="정렬">
+      <option value="dist">거리순</option>
+      <option value="priceAsc">가격 낮은 순</option>
+      <option value="priceDesc">가격 높은 순</option>
+      <option value="reviews">한줄평 많은 순</option>
+      <option value="recent">최근 추가순</option>
+    </select>
+    <button class="btn primary" id="toggleAdd" aria-expanded="false">+ 가게 추가</button>
+  </div>
+  <div class="chips" id="chips" role="group" aria-label="종류 필터"></div>
+
+  <section class="card addbox" id="addBox" hidden>
+    <h2>가게 추가</h2>
+    <form id="addForm" class="grid" autocomplete="off">
+      <div class="f full">
+        <label for="a_name">가게 이름 *</label>
+        <span class="searchrow">
+          <input id="a_name" type="search" maxlength="50" required placeholder="예: 헷츠 전포">
+          <button class="btn" id="kgo" type="button">검색</button>
+          <button class="btn" id="kmap" type="button">지도에서 선택</button>
+        </span>
+        <div class="results" id="kres" hidden></div>
+        <div class="picked" id="picked" hidden></div>
+      </div>
+      <label class="f" for="a_cat">종류
+        <select id="a_cat"></select>
+      </label>
+      <label class="f" for="a_price">대표 가격 (원)<input id="a_price" type="number" inputmode="numeric" min="0" step="100" placeholder="12000"></label>
+      <label class="f full" for="a_menu">추천 메뉴<input id="a_menu" maxlength="100" placeholder="제육, 육회비빔밥"></label>
+      <label class="f full" for="a_desc">한줄 설명<textarea id="a_desc" maxlength="300" placeholder="양 많고 빨리 나와요. 일요일 휴무."></textarea></label>
+      <label class="f" for="a_nick">닉네임 *<input id="a_nick" maxlength="20" required></label>
+      <label class="f" for="a_pw">비밀번호 * (수정·삭제용, 4자 이상)<input id="a_pw" type="password" minlength="4" required></label>
+      <div class="actions full">
+        <button class="btn primary" type="submit">등록</button>
+        <button class="btn" type="button" id="cancelAdd">닫기</button>
+        <span class="msg" id="addMsg" role="status"></span>
+      </div>
+    </form>
+  </section>
+
+  <div class="count" id="count"></div>
+  <div class="card list" id="list"><div class="empty">불러오는 중…</div></div>
+</div>
+
+<div class="modal" id="mapModal" hidden>
+  <div class="modal-back" data-close></div>
+  <div class="modal-panel card" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
+    <div class="modal-head">
+      <h2 id="mapTitle">지도에서 선택</h2>
+      <button class="btn" type="button" id="mapClose" data-close>닫기</button>
+    </div>
+    <form class="searchrow" id="mapSearch" role="search">
+      <input id="mq" type="search" maxlength="50" placeholder="가게 이름으로 찾기" aria-label="지도에서 가게 이름으로 찾기">
+      <button class="btn" type="submit">검색</button>
+    </form>
+    <p class="hint" id="mapHint">이름으로 찾거나, 지도에서 가게가 있는 곳을 누르면 주변 음식점·카페를 보여 드려요.</p>
+    <div id="mapBox"></div>
+    <div class="results" id="mapRes" hidden></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+// ===================== 설정 =====================
+// Supabase: Project Settings > API 의 Project URL / anon public key
+// Kakao: developers.kakao.com > 내 애플리케이션 > 앱 키 > JavaScript 키 (비워 두면 가게 이름만 직접 입력)
+const CONFIG = {
+  SUPABASE_URL: "https://kxejoncultswixtxhzxs.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4ZWpvbmN1bHRzd2l4dHhoenhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwNTMwNDUsImV4cCI6MjEwODYyOTA0NX0.snHt5p5hV2TbRrzel5QfY_97W_gNvT4bbGnIAcZK3QU",
+  KAKAO_JS_KEY: "695807c1ce3a1501057bbe08a465b704",
+  BASE: { lat: 35.1552386, lng: 129.0649739, label: "기준 위치 전포대로 207 (전포동 688-2)" },
+};
+const CATEGORIES = ["한식", "중식·대만", "일식", "양식", "패스트푸드", "아시아", "태국", "분식", "샐러드·샌드위치", "카페·빵", "기타"];
+// =================================================
+
+const $ = id => document.getElementById(id);
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const naver = q => "https://map.naver.com/p/search/" + encodeURIComponent(q);
+const naverQ = n => /서면|전포/.test(n) ? n : n + " 전포";
+const won = n => n == null ? "" : n.toLocaleString("ko-KR") + "원";
+const fmtD = d => d == null ? "위치 정보 없음" : d === 0 ? "같은 건물" : d < 1000 ? `${d}m` : `${(d / 1000).toFixed(1)}km`;
+const fmtDate = s => { const d = new Date(s); return `${d.getMonth() + 1}.${d.getDate()}`; };
+const store = {
+  get(k) { try { return localStorage.getItem(k) } catch (e) { return null } },
+  set(k, v) { try { localStorage.setItem(k, v) } catch (e) {} },
+};
+
+function meters(lat, lng) {
+  if (lat == null || lng == null) return null;
+  const R = 6371000, r = Math.PI / 180, B = CONFIG.BASE;
+  const dLat = (lat - B.lat) * r, dLng = (lng - B.lng) * r;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(B.lat * r) * Math.cos(lat * r) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(a)) / 10) * 10;
+}
+
+// ---------- 상태 ----------
+const state = {
+  rows: [],
+  cat: store.get("cat") || "전체",
+  sort: store.get("sort") || "dist",
+  q: "",
+  open: null,           // { id, mode: "reviews" | "edit" | "del" }
+  reviews: new Map(),   // restaurant_id -> [review]
+  reviewDel: null,      // review id being deleted
+  picked: null,         // 카카오에서 고른 장소
+};
+
+// ---------- Supabase ----------
+const configured = !/YOUR-/.test(CONFIG.SUPABASE_URL + CONFIG.SUPABASE_ANON_KEY);
+const sb = configured ? supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY) : null;
+const errText = e => (e && (e.message || e.error_description)) || "알 수 없는 오류가 났어요. 잠시 후 다시 시도해 주세요.";
+
+async function loadRows() {
+  const { data, error } = await sb.from("restaurant_list").select("*");
+  if (error) throw error;
+  state.rows = data.map(r => ({ ...r, d: meters(r.lat, r.lng) }));
+}
+async function loadReviews(id) {
+  const { data, error } = await sb.from("review_list").select("*").eq("restaurant_id", id).order("created_at", { ascending: false });
+  if (error) throw error;
+  state.reviews.set(id, data);
+}
+async function rpc(fn, args) {
+  const { data, error } = await sb.rpc(fn, args);
+  if (error) throw error;
+  return data;
+}
+
+// ---------- 목록 ----------
+function cmp(a, b, key, dir) {
+  const x = a[key], y = b[key];
+  if (x == null && y == null) return 0;
+  if (x == null) return 1;
+  if (y == null) return -1;
+  return (x < y ? -1 : x > y ? 1 : 0) * dir;
+}
+function visibleRows() {
+  const q = state.q.trim().toLowerCase();
+  const out = state.rows.filter(r =>
+    (state.cat === "전체" || r.category === state.cat) &&
+    (!q || (r.name + " " + (r.menu || "") + " " + (r.description || "")).toLowerCase().includes(q)));
+  const s = state.sort;
+  out.sort((a, b) =>
+    s === "priceAsc" ? cmp(a, b, "price", 1) || cmp(a, b, "d", 1) :
+    s === "priceDesc" ? cmp(a, b, "price", -1) || cmp(a, b, "d", 1) :
+    s === "reviews" ? cmp(a, b, "review_count", -1) || cmp(a, b, "d", 1) :
+    s === "recent" ? cmp(a, b, "created_at", -1) :
+    cmp(a, b, "d", 1) || cmp(a, b, "price", 1));
+  return out;
+}
+
+function renderChips() {
+  const cats = ["전체", ...new Set([...CATEGORIES.filter(c => state.rows.some(r => r.category === c)),
+                                   ...state.rows.map(r => r.category)])];
+  if (!cats.includes(state.cat)) state.cat = "전체";
+  $("chips").innerHTML = cats.map(c => `<button class="chip" data-cat="${esc(c)}" aria-pressed="${c === state.cat}">${esc(c)}</button>`).join("");
+}
+
+function panelHtml(r) {
+  const o = state.open;
+  if (!o || o.id !== r.id) return "";
+  if (o.mode === "reviews") {
+    const list = state.reviews.get(r.id);
+    const items = list == null ? `<li class="hint">불러오는 중…</li>` :
+      list.length === 0 ? `<li class="hint">아직 한줄평이 없어요. 첫 한줄평을 남겨 주세요.</li>` :
+      list.map(v => `
+        <li class="review">
+          <span class="rh"><b>${esc(v.nickname)}</b><span>${fmtDate(v.created_at)}</span>
+            <button class="btn link" data-act="revdel" data-rid="${v.id}" type="button">삭제</button></span>
+          <p>${esc(v.content)}</p>
+          ${state.reviewDel === v.id ? `
+          <form class="inline" data-form="revdel" data-rid="${v.id}">
+            <input type="password" id="rd_pw_${v.id}" placeholder="한줄평 비밀번호" required aria-label="한줄평 비밀번호">
+            <button class="btn danger" type="submit">삭제</button>
+            <button class="btn" type="button" data-act="revdelcancel">취소</button>
+            <span class="msg"></span>
+          </form>` : ""}
+        </li>`).join("");
+    return `<div class="panel">
+      <ul class="reviews">${items}</ul>
+      <form class="grid" data-form="review" autocomplete="off">
+        <label class="f full" for="rv_c_${r.id}">한줄평<textarea id="rv_c_${r.id}" maxlength="300" required placeholder="웨이팅 20분, 츠케멘 양 많아요"></textarea></label>
+        <label class="f" for="rv_n_${r.id}">닉네임<input id="rv_n_${r.id}" maxlength="20" required value="${esc(store.get("nick") || "")}"></label>
+        <label class="f" for="rv_p_${r.id}">비밀번호 (4자 이상)<input id="rv_p_${r.id}" type="password" minlength="4" required></label>
+        <div class="actions full"><button class="btn primary" type="submit">한줄평 남기기</button><span class="msg"></span></div>
+      </form>
+    </div>`;
+  }
+  if (o.mode === "edit") {
+    return `<div class="panel">
+      <form class="grid" data-form="edit" autocomplete="off">
+        <label class="f" for="e_cat_${r.id}">종류<select id="e_cat_${r.id}">${catOptions(r.category)}</select></label>
+        <label class="f" for="e_price_${r.id}">대표 가격 (원)<input id="e_price_${r.id}" type="number" min="0" step="100" value="${r.price ?? ""}"></label>
+        <label class="f full" for="e_menu_${r.id}">추천 메뉴<input id="e_menu_${r.id}" maxlength="100" value="${esc(r.menu || "")}"></label>
+        <label class="f full" for="e_desc_${r.id}">한줄 설명<textarea id="e_desc_${r.id}" maxlength="300">${esc(r.description || "")}</textarea></label>
+        <label class="f full" for="e_pw_${r.id}">등록할 때 정한 비밀번호<input id="e_pw_${r.id}" type="password" required></label>
+        <div class="actions full"><button class="btn primary" type="submit">저장</button><button class="btn" type="button" data-act="close">취소</button><span class="msg"></span></div>
+      </form>
+    </div>`;
+  }
+  if (o.mode === "del") {
+    return `<div class="panel">
+      <form class="inline" data-form="del">
+        <span class="hint" style="flex-basis:100%">가게와 한줄평 ${r.review_count}개가 함께 지워져요.</span>
+        <input type="password" id="d_pw_${r.id}" placeholder="등록할 때 정한 비밀번호" required aria-label="비밀번호">
+        <button class="btn danger" type="submit">삭제</button>
+        <button class="btn" type="button" data-act="close">취소</button>
+        <span class="msg"></span>
+      </form>
+    </div>`;
+  }
+  return "";
+}
+
+function renderList() {
+  const rows = visibleRows();
+  $("count").textContent = `${rows.length}곳` + (rows.length !== state.rows.length ? ` / 전체 ${state.rows.length}곳` : "");
+  if (!rows.length) {
+    $("list").innerHTML = `<div class="empty">${state.rows.length ? "조건에 맞는 가게가 없어요." : "아직 등록된 가게가 없어요. '+ 가게 추가'로 첫 가게를 올려 주세요."}</div>`;
+    return;
+  }
+  $("list").innerHTML = rows.map(r => `
+    <article class="row" data-id="${r.id}">
+      <div class="line1"><a class="name" href="${naver(naverQ(r.name))}" target="_blank" rel="noopener">${esc(r.name)}</a>
+        <span class="price">${r.price != null ? won(r.price) : "가격 정보 없음"}</span></div>
+      <div class="line2"><span class="menu">${esc(r.category)}${r.menu ? " · " + esc(r.menu) : ""}</span><span class="dist">${fmtD(r.d)}</span></div>
+      ${r.description ? `<p class="desc">${esc(r.description)}</p>` : ""}
+      <div class="meta">
+        <span class="who">${esc(r.nickname)} · ${fmtDate(r.created_at)}</span>
+        <button class="btn link" data-act="reviews" type="button" aria-expanded="${state.open?.id === r.id && state.open.mode === "reviews"}">한줄평 ${r.review_count}</button>
+        <button class="btn link" data-act="edit" type="button">수정</button>
+        <button class="btn link" data-act="del" type="button">삭제</button>
+      </div>
+      ${panelHtml(r)}
+    </article>`).join("");
+}
+
+function render() { renderChips(); renderList(); }
+// sel이 비어 있으면 맨 앞에 "선택하세요" 항목을 넣는다 (가게 추가 폼용)
+// 이 상태로 등록하면 값이 ""로 넘어가고, DB 함수(add_restaurant)가 '기타'로 저장한다
+function catOptions(sel) {
+  const list = CATEGORIES.includes(sel) || !sel ? CATEGORIES : [...CATEGORIES, sel];
+  const placeholder = sel ? "" : `<option value="" disabled selected>선택하세요</option>`;
+  return placeholder + list.map(c => `<option${c === sel ? " selected" : ""}>${esc(c)}</option>`).join("");
+}
+function setMsg(el, text, ok) { if (!el) return; el.textContent = text; el.className = "msg " + (ok ? "ok" : "err"); }
+const toNum = v => v === "" || v == null ? null : Math.max(0, Math.round(Number(v)));
+
+async function refresh() {
+  await loadRows();
+  render();
+}
+
+// ---------- 목록 이벤트 ----------
+$("chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  state.cat = b.dataset.cat; store.set("cat", state.cat); render();
+});
+$("q").addEventListener("input", e => { state.q = e.target.value; renderList(); });
+$("sort").value = state.sort;
+$("sort").addEventListener("change", e => { state.sort = e.target.value; store.set("sort", state.sort); renderList(); });
+
+$("list").addEventListener("click", async e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const id = Number(b.closest(".row").dataset.id), act = b.dataset.act;
+  if (act === "close") { state.open = null; renderList(); return; }
+  if (act === "revdel") { state.reviewDel = Number(b.dataset.rid); renderList(); $("rd_pw_" + b.dataset.rid)?.focus(); return; }
+  if (act === "revdelcancel") { state.reviewDel = null; renderList(); return; }
+  const same = state.open && state.open.id === id && state.open.mode === act;
+  state.open = same ? null : { id, mode: act };
+  state.reviewDel = null;
+  renderList();
+  if (!same && act === "reviews") {
+    try { await loadReviews(id); } catch (err) { state.reviews.set(id, []); }
+    renderList();
+  }
+  if (!same && act === "del") $("d_pw_" + id)?.focus();
+});
+
+$("list").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target, kind = f.dataset.form, id = Number(f.closest(".row").dataset.id);
+  const msg = f.querySelector(".msg"), btn = f.querySelector("button[type=submit]");
+  btn.disabled = true;
+  try {
+    if (kind === "review") {
+      const nick = $("rv_n_" + id).value;
+      await rpc("add_review", { p_restaurant_id: id, p_nickname: nick, p_content: $("rv_c_" + id).value, p_password: $("rv_p_" + id).value });
+      store.set("nick", nick.trim());
+      await loadReviews(id);
+    } else if (kind === "revdel") {
+      await rpc("delete_review", { p_id: Number(f.dataset.rid), p_password: $("rd_pw_" + f.dataset.rid).value });
+      state.reviewDel = null;
+      await loadReviews(id);
+    } else if (kind === "edit") {
+      await rpc("update_restaurant", {
+        p_id: id, p_password: $("e_pw_" + id).value, p_category: $("e_cat_" + id).value,
+        p_menu: $("e_menu_" + id).value, p_price: toNum($("e_price_" + id).value), p_description: $("e_desc_" + id).value,
+      });
+      state.open = null;
+    } else if (kind === "del") {
+      await rpc("delete_restaurant", { p_id: id, p_password: $("d_pw_" + id).value });
+      state.open = null;
+      state.reviews.delete(id);
+    }
+    await refresh();
+  } catch (err) {
+    setMsg(msg, errText(err));
+    btn.disabled = false;
+  }
+});
+
+// ---------- 가게 추가 ----------
+$("a_cat").innerHTML = catOptions("");
+$("a_nick").value = store.get("nick") || "";
+function toggleAdd(open) {
+  $("addBox").hidden = !open;
+  $("toggleAdd").setAttribute("aria-expanded", String(open));
+  if (open) $("a_name").focus();
+}
+$("toggleAdd").addEventListener("click", () => toggleAdd($("addBox").hidden));
+$("cancelAdd").addEventListener("click", () => toggleAdd(false));
+
+let kakaoPlaces = null;
+// 카카오를 못 쓰면 검색 버튼만 숨기고, 가게 이름 칸은 직접 입력용으로 그대로 둔다
+function noKakao() {
+  $("kgo").hidden = true;
+  $("kmap").hidden = true;
+  $("a_name").type = "text";
+  $("a_name").placeholder = "가게 이름";
+}
+function loadKakao() {
+  if (!CONFIG.KAKAO_JS_KEY) { noKakao(); return; }
+  const s = document.createElement("script");
+  s.src = "https://dapi.kakao.com/v2/maps/sdk.js?autoload=false&libraries=services&appkey=" + encodeURIComponent(CONFIG.KAKAO_JS_KEY);
+  s.onload = () => {
+    if (!window.kakao || !kakao.maps) return noKakao();
+    kakao.maps.load(() => { kakaoPlaces = new kakao.maps.services.Places(); });
+  };
+  s.onerror = noKakao;
+  document.head.appendChild(s);
+}
+function clearPicked() {
+  state.picked = null;
+  $("picked").hidden = true;
+}
+function kakaoSearch() {
+  const kw = $("a_name").value.trim(); if (!kw || !kakaoPlaces) return;
+  const box = $("kres");
+  box.hidden = false; box.innerHTML = `<div class="result"><span class="hint">찾는 중…</span></div>`;
+  kakaoPlaces.keywordSearch(kw, (data, status) => {
+    if (status !== kakao.maps.services.Status.OK || !data.length) {
+      box.innerHTML = `<div class="result"><span class="hint">검색 결과가 없어요. 이 이름 그대로 등록할 수도 있어요. 이 경우 거리는 표시되지 않아요.</span></div>`;
+      return;
+    }
+    box._data = data;
+    box.innerHTML = data.map((p, i) => `
+      <button class="result" type="button" data-i="${i}">
+        <span>${esc(p.place_name)}</span><span class="dist">${fmtD(meters(+p.y, +p.x))}</span>
+        <small>${esc(p.road_address_name || p.address_name)} · ${esc((p.category_name || "").split(" > ").slice(1).join(" > "))}</small>
+      </button>`).join("");
+  }, { location: new kakao.maps.LatLng(CONFIG.BASE.lat, CONFIG.BASE.lng), radius: 3000, sort: kakao.maps.services.SortBy.DISTANCE });
+}
+$("kgo").addEventListener("click", kakaoSearch);
+$("a_name").addEventListener("keydown", e => {
+  if (e.key === "Enter" && kakaoPlaces) { e.preventDefault(); kakaoSearch(); }
+});
+// 검색 결과나 지도에서 고른 장소를 폼에 채운다
+function pickPlace(p) {
+  state.picked = { name: p.place_name, address: p.road_address_name || p.address_name, lat: +p.y, lng: +p.x, url: p.place_url };
+  $("kres").hidden = true;
+  $("a_name").value = p.place_name;
+  $("picked").hidden = false;
+  $("picked").textContent = `선택한 위치: ${state.picked.address} · 기준 위치에서 ${fmtD(meters(state.picked.lat, state.picked.lng))}`;
+  $("a_menu").focus();
+}
+$("kres").addEventListener("click", e => {
+  const b = e.target.closest(".result[data-i]"); if (!b) return;
+  pickPlace($("kres")._data[Number(b.dataset.i)]);
+});
+
+// ---------- 지도에서 선택 ----------
+const mapState = { map: null, clickMarker: null, placeMarkers: [], data: [] };
+// 지도 팝업 목록의 거리는 검색 기준점에서 잰 값 (지도를 누른 곳 또는 기준 위치)
+const placeRow = from => (p, i) => `
+  <button class="result" type="button" data-i="${i}">
+    <span>${esc(p.place_name)}</span><span class="dist">${from} ${fmtD(Number(p.distance))}</span>
+    <small>${esc(p.road_address_name || p.address_name)} · ${esc((p.category_name || "").split(" > ").slice(1).join(" > "))}</small>
+  </button>`;
+
+function openMap() {
+  if (!kakaoPlaces) return;
+  $("mapModal").hidden = false;
+  document.body.style.overflow = "hidden";
+  const B = new kakao.maps.LatLng(CONFIG.BASE.lat, CONFIG.BASE.lng);
+  if (!mapState.map) {
+    mapState.map = new kakao.maps.Map($("mapBox"), { center: B, level: 3 });
+    new kakao.maps.CustomOverlay({
+      map: mapState.map, position: B, yAnchor: 1.4,
+      content: `<div style="background:#1c231f;color:#fff;font-size:12px;padding:3px 8px;border-radius:999px;white-space:nowrap">기준 위치</div>`,
+    });
+    mapState.clickMarker = new kakao.maps.Marker({ position: B });
+    kakao.maps.event.addListener(mapState.map, "click", e => searchNear(e.latLng));
+  }
+  // 숨겨져 있던 영역에 지도를 그렸으니 크기를 다시 잡는다
+  setTimeout(() => { mapState.map.relayout(); mapState.map.setCenter(B); }, 0);
+  // 가게 이름 칸에 적어 둔 값이 있으면 그대로 검색칸에 옮긴다
+  const typed = $("a_name").value.trim();
+  $("mq").value = typed;
+  if (typed) searchByName(); else $("mq").focus();
+}
+function closeMap() {
+  $("mapModal").hidden = true;
+  document.body.style.overflow = "";
+  $("kmap").focus();
+}
+function clearPlaceMarkers() {
+  mapState.placeMarkers.forEach(m => m.setMap(null));
+  mapState.placeMarkers = [];
+}
+
+// 찾은 장소를 목록과 지도에 함께 표시한다
+function showOnMap(list, from, fitBounds) {
+  mapState.data = list;
+  $("mapRes").innerHTML = list.map(placeRow(from)).join("");
+  const bounds = new kakao.maps.LatLngBounds();
+  list.forEach((p, i) => {
+    const pos = new kakao.maps.LatLng(+p.y, +p.x);
+    const m = new kakao.maps.Marker({ map: mapState.map, position: pos, title: p.place_name, opacity: .75 });
+    kakao.maps.event.addListener(m, "click", () => choose(i));
+    mapState.placeMarkers.push(m);
+    bounds.extend(pos);
+  });
+  if (fitBounds && list.length) mapState.map.setBounds(bounds);
+}
+
+// 가게 이름으로 찾기: 기준 위치에서 가까운 순
+function searchByName() {
+  const kw = $("mq").value.trim(); if (!kw) return;
+  mapState.clickMarker.setMap(null);
+  clearPlaceMarkers();
+  const box = $("mapRes");
+  box.hidden = false;
+  box.innerHTML = `<div class="result"><span class="hint">찾는 중…</span></div>`;
+  const S = kakao.maps.services;
+  kakaoPlaces.keywordSearch(kw, (data, status) => {
+    if (status !== S.Status.OK || !data.length) {
+      box.innerHTML = `<div class="result"><span class="hint">'${esc(kw)}'(으)로 찾은 가게가 없어요. 이름을 줄이거나 지도에서 직접 눌러 보세요.</span></div>`;
+      return;
+    }
+    showOnMap(data, "기준 위치에서", true);
+  }, { location: new kakao.maps.LatLng(CONFIG.BASE.lat, CONFIG.BASE.lng), radius: 3000, sort: S.SortBy.DISTANCE });
+}
+
+// 누른 지점 주변의 음식점(FD6)·카페(CE7)를 찾아 가까운 순으로 보여 준다
+function searchNear(latLng) {
+  mapState.clickMarker.setPosition(latLng);
+  mapState.clickMarker.setMap(mapState.map);
+  clearPlaceMarkers();
+  const box = $("mapRes");
+  box.hidden = false;
+  box.innerHTML = `<div class="result"><span class="hint">주변 가게를 찾는 중…</span></div>`;
+
+  const S = kakao.maps.services;
+  const opts = { location: latLng, radius: 60, sort: S.SortBy.DISTANCE };
+  const found = [];
+  let pending = 2;
+  const done = () => {
+    if (--pending) return;
+    found.sort((a, b) => Number(a.distance) - Number(b.distance));
+    if (!found.length) {
+      mapState.data = [];
+      box.innerHTML = `<div class="result"><span class="hint">누른 곳 근처에 등록된 음식점·카페가 없어요. 가게 건물을 조금 더 정확히 눌러 보세요.</span></div>`;
+      return;
+    }
+    showOnMap(found.slice(0, 15), "누른 곳에서", false);
+  };
+  ["FD6", "CE7"].forEach(code => {
+    kakaoPlaces.categorySearch(code, (data, status) => {
+      if (status === S.Status.OK) found.push(...data);
+      done();
+    }, opts);
+  });
+}
+function choose(i) {
+  const p = mapState.data[i]; if (!p) return;
+  clearPlaceMarkers();
+  $("mapRes").hidden = true;
+  closeMap();
+  pickPlace(p);
+}
+
+$("kmap").addEventListener("click", openMap);
+$("mapSearch").addEventListener("submit", e => { e.preventDefault(); searchByName(); });
+$("mapRes").addEventListener("click", e => {
+  const b = e.target.closest(".result[data-i]"); if (b) choose(Number(b.dataset.i));
+});
+$("mapModal").addEventListener("click", e => { if (e.target.closest("[data-close]")) closeMap(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("mapModal").hidden) closeMap(); });
+// 고른 뒤에 이름을 고치면 위치 선택을 푼다 (다른 가게 좌표가 붙지 않게)
+$("a_name").addEventListener("input", () => {
+  if (state.picked && $("a_name").value !== state.picked.name) clearPicked();
+});
+
+$("addForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = $("addMsg"), btn = e.target.querySelector("button[type=submit]");
+  const p = state.picked;
+  btn.disabled = true;
+  try {
+    const nick = $("a_nick").value;
+    const newId = await rpc("add_restaurant", {
+      p_name: $("a_name").value, p_category: $("a_cat").value, p_menu: $("a_menu").value,
+      p_price: toNum($("a_price").value), p_description: $("a_desc").value,
+      p_address: p?.address ?? null, p_lat: p?.lat ?? null, p_lng: p?.lng ?? null, p_place_url: p?.url ?? null,
+      p_nickname: nick, p_password: $("a_pw").value,
+    });
+    store.set("nick", nick.trim());
+    const name = $("a_name").value.trim();
+    e.target.reset(); $("a_cat").innerHTML = catOptions(""); $("a_nick").value = nick.trim();
+    $("kres").hidden = true; clearPicked();
+    setMsg(msg, `'${name}'을(를) 등록했어요.`, true);
+    state.q = ""; $("q").value = ""; state.cat = "전체";
+    await refresh();
+    document.querySelector(`.row[data-id="${newId}"]`)?.scrollIntoView({ block: "center" });
+  } catch (err) {
+    setMsg(msg, errText(err));
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ---------- 시작 ----------
+$("baseLabel").textContent = CONFIG.BASE.label;
+$("baseLink").href = naver("부산 전포대로 207");
+if (!configured) {
+  $("setupBanner").hidden = false;
+  $("setupBanner").textContent = "아직 Supabase 설정이 안 돼 있어요. index.html 위쪽 CONFIG에 Project URL과 anon key를 넣어 주세요.";
+  $("list").innerHTML = `<div class="empty">설정을 마치면 가게 목록이 여기에 나와요.</div>`;
+  $("toggleAdd").disabled = true;
+} else {
+  loadKakao();
+  refresh().catch(err => {
+    $("list").innerHTML = `<div class="empty">목록을 불러오지 못했어요. ${esc(errText(err))}</div>`;
+  });
+}
+</script>
+</body>
+</html>
