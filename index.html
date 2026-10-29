@@ -103,10 +103,26 @@
         flex-direction: column;
         gap: 8px;
       }
+      .header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
       .titles {
         display: flex;
         flex-direction: column;
         gap: 2px;
+        min-width: 0;
+      }
+      .btn.link.helplink {
+        margin-top: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .btn.link.helplink:hover {
+        text-decoration: underline;
       }
       .subtitle {
         margin: 0;
@@ -696,6 +712,40 @@
       #mapRes {
         max-height: 28vh;
       }
+      .help-panel {
+        width: min(560px, 100%);
+      }
+      .help-body {
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding-right: 4px;
+      }
+      .help-body section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .help-body h3 {
+        margin: 0;
+        font-family: var(--display);
+        font-size: 0.95rem;
+        font-weight: 800;
+      }
+      .help-body p,
+      .help-body ul {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+      .help-body ul {
+        padding-left: 1.2em;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
       .mapview {
         padding: 10px;
         display: flex;
@@ -800,9 +850,19 @@
   <body>
     <div class="wrap">
       <header class="header">
-        <div class="titles">
-          <h1>오늘 점심?</h1>
-          <p class="subtitle">SAP CODE ACADEMY 전포동 점심 지도</p>
+        <div class="header-top">
+          <div class="titles">
+            <h1>오늘 점심?</h1>
+            <p class="subtitle">SAP CODE ACADEMY 전포동 점심 지도</p>
+          </div>
+          <button
+            class="btn link helplink"
+            id="helpOpen"
+            type="button"
+            aria-haspopup="dialog"
+          >
+            도움말
+          </button>
         </div>
         <div class="base">
           <span id="baseLabel"></span
@@ -810,11 +870,6 @@
             >네이버 지도에서 보기</a
           >
         </div>
-        <p class="hint">
-          가게 이름을 누르면 네이버 지도 검색이 열려요. 거리는 기준 위치에서 잰
-          직선거리예요. 누구나 가게를 추가하고 후기를 남길 수 있어요. 글을 쓸 때
-          정한 비밀번호로 수정·삭제할 수 있어요.
-        </p>
       </header>
 
       <div class="banner" id="setupBanner" hidden></div>
@@ -871,7 +926,7 @@
                 type="search"
                 maxlength="50"
                 required
-                placeholder="예: 헷츠 전포"
+                placeholder="예: 이재모 피자"
               />
               <button class="btn" id="kgo" type="button">검색</button>
               <button class="btn" id="kmap" type="button">지도에서 선택</button>
@@ -1000,6 +1055,102 @@
         </p>
         <div id="mapBox"></div>
         <div class="results" id="mapRes" hidden></div>
+      </div>
+    </div>
+
+    <div class="modal" id="helpModal" hidden>
+      <div class="modal-back" data-close></div>
+      <div
+        class="modal-panel card help-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="helpTitle"
+      >
+        <div class="modal-head">
+          <h2 id="helpTitle">도움말</h2>
+          <button class="btn" type="button" id="helpClose" data-close>
+            닫기
+          </button>
+        </div>
+        <div class="help-body">
+          <section>
+            <h3>가게 보기</h3>
+            <ul>
+              <li>가게 이름을 누르면 네이버 지도 검색이 새 창으로 열려요.</li>
+              <li>
+                거리는 텐스(전포대로 207)에서 잰 직선거리라 실제로 걷는 거리와는 다를 수 있어요.
+              </li>
+              <li>
+                '1기 추천'은 강의실 입구에 붙여진 SAP CODE 1기 추천에서 옮긴
+                가게예요.
+              </li>
+              <li>
+                [목록] 탭에서는 조건에 맞는 가게를 리스트 형식으로 보여줘요.
+              </li>
+              <li>
+                [지도] 탭에서는 지금 목록에 보이는 가게를 지도에 핀으로
+                찍어 보여 줘요.
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h3>가게 추가</h3>
+            <ul>
+              <li>
+                '검색'이나 '지도에서 선택'으로 가게를 고르면 위치와 종류가
+                자동으로 채워져요.
+              </li>
+              <li>
+                카카오맵에 없는 가게는 이름만 적고 등록해도 돼요. 이때는 거리가
+                표시되지 않아요.
+              </li>
+              <li>종류(카테고리)를 고르지 않으면 '기타'로 저장돼요.</li>
+            </ul>
+          </section>
+          <section>
+            <h3>닉네임과 비밀번호</h3>
+            <ul>
+              <li>
+                로그인이 없어요. 가게나 후기를 쓸 때 정한 비밀번호로만 그 글을
+                고치거나 지울 수 있어요.
+              </li>
+              <li>
+                비밀번호는 잊어버리면 찾을 방법이 없어요. 기억하기 쉬운 걸로
+                정해 주세요.
+              </li>
+              <li>
+                닉네임을 비워 두면 '배고픈 만두' 같은 이름이 자동으로 붙어요.
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h3>좋아요</h3>
+            <ul>
+              <li>가게와 후기에 각각 누를 수 있어요. 다시 누르면 취소돼요.</li>
+              <li>
+                브라우저마다 한 번씩 세요. 다른 기기나 다른 브라우저에서 누르면
+                따로 세요.
+              </li>
+              <li>
+                가게 좋아요가 많은 순서로 위쪽 '인기 가게 TOP 3'에 올라가고,
+                카드에는 그 가게에서 좋아요가 가장 많은 후기가 나와요.
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h3>문 닫은 가게</h3>
+            <ul>
+              <li>
+                가게의 '후기'를 펼친 뒤 아래 '폐업 제보하기'를 눌러 주세요. 다시
+                누르면 취소돼요.
+              </li>
+              <li>
+                관리자가 확인하면 목록·지도에서 숨겨져요. 그 가게에 남긴 후기는
+                지워지지 않아요.
+              </li>
+            </ul>
+          </section>
+        </div>
       </div>
     </div>
 
@@ -1478,7 +1629,7 @@
     <form class="grid" data-form="review" autocomplete="off">
       <label class="f full">후기<textarea name="content" id="rv_c_${r.id}" maxlength="300" required placeholder="웨이팅 20분, 츠케멘 양 많아요"></textarea></label>
       <label class="f">닉네임<input name="nickname" id="rv_n_${r.id}" maxlength="20" autocomplete="off" placeholder="비워 두면 자동으로 지어져요" value="${esc(store.get("nick") || "")}"></label>
-      <label class="f">비밀번호 (4자 이상)${pwInput(`name="password" id="rv_p_${r.id}" minlength="4" required`)}</label>
+      <label class="f">비밀번호 * (수정·삭제용, 4자 이상)${pwInput(`name="password" id="rv_p_${r.id}" minlength="4" required`)}</label>
       <div class="actions full"><button class="btn primary" type="submit">후기 남기기</button><span class="msg"></span></div>
     </form>
     <div class="reportline">
@@ -2221,7 +2372,9 @@
         if (e.target.closest("[data-close]")) closePicker();
       });
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && !$("mapModal").hidden) closePicker();
+        if (e.key !== "Escape") return;
+        if (!$("helpModal").hidden) closeHelp();
+        else if (!$("mapModal").hidden) closePicker();
       });
 
       // =========================================================
@@ -2335,7 +2488,25 @@
       }
 
       // =========================================================
-      // 14. 시작
+      // 14. 도움말
+      // =========================================================
+      function openHelp() {
+        $("helpModal").hidden = false;
+        document.body.style.overflow = "hidden";
+        $("helpClose").focus();
+      }
+      function closeHelp() {
+        $("helpModal").hidden = true;
+        document.body.style.overflow = "";
+        $("helpOpen").focus();
+      }
+      $("helpOpen").addEventListener("click", openHelp);
+      $("helpModal").addEventListener("click", (e) => {
+        if (e.target.closest("[data-close]")) closeHelp();
+      });
+
+      // =========================================================
+      // 15. 시작
       // =========================================================
       $("baseLabel").textContent = CONFIG.BASE.label;
       $("baseLink").href = naverUrl(CONFIG.BASE.search);
