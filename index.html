@@ -1317,8 +1317,7 @@
         e?.error_description ||
         "알 수 없는 오류가 났어요. 잠시 후 다시 시도해 주세요.";
 
-      // 받침에 맞는 조사: josa("국밥", EUL) → "을", josa("피자", EUL) → "를". 한글이 아니면 "을(를)"
-      const EUL = ["을", "를", "을(를)"];
+      // 받침에 맞는 조사: josa("국밥", RO) → "으로", josa("피자", RO) → "로". 한글이 아니면 "(으)로"
       const RO = ["으로", "로", "(으)로"];
       function josa(word, [withFinal, withoutFinal, unknown]) {
         const text = String(word).trim();
@@ -1456,8 +1455,15 @@
         state.src = s;
         store.set("src", s);
       }
+      // 펼쳐 둔 후기·수정·삭제 칸을 접는다
+      function closePanel() {
+        state.open = null;
+        state.reviewDel = null;
+      }
       // 특정 가게를 보여 주기 전에 필터를 푼다. keepNew면 '새로 등록' 탭은 그대로 둔다 (방금 등록한 가게가 보이니까)
+      // 목록이 바뀌니 펼쳐 둔 칸도 접는다
       function clearFilters({ keepNew = false } = {}) {
+        closePanel();
         state.q = "";
         $("q").value = "";
         setCat(ALL);
@@ -1841,22 +1847,26 @@
         const b = e.target.closest(".chip");
         if (!b) return;
         setCat(b.dataset.cat);
+        closePanel(); // 조회 조건이 바뀌면 펼쳐 둔 칸을 접는다
         render();
       });
       $("srcSeg").addEventListener("click", (e) => {
         const b = e.target.closest("[data-src]");
         if (!b) return;
         setSrc(b.dataset.src);
+        closePanel();
         render();
       });
       $("q").addEventListener("input", (e) => {
         state.q = e.target.value;
+        closePanel();
         renderList();
       });
       $("sort").value = state.sort;
       $("sort").addEventListener("change", (e) => {
         state.sort = e.target.value;
         store.set("sort", state.sort);
+        closePanel();
         renderList();
       });
 
@@ -1914,7 +1924,7 @@
         edit: (id) => togglePanel(id, "edit"),
         del: (id) => togglePanel(id, "del"),
         close() {
-          state.open = null;
+          closePanel();
           renderList();
         },
         revdel(id, b) {
@@ -2099,11 +2109,7 @@
           $("catHint").hidden = true;
           $("kres").hidden = true;
           clearPicked();
-          setMsg(
-            $("addMsg"),
-            `'${name}'${josa(name, EUL)} '${nick}' 이름으로 등록했어요.`,
-            true,
-          );
+          toggleAdd(false); // 등록이 끝나면 추가 칸을 접는다
 
           // 전체 목록에서 방금 등록한 가게로 스크롤해서 잠깐 강조한다
           clearFilters({ keepNew: true });
